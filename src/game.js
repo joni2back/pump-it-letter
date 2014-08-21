@@ -16,6 +16,7 @@ var PumpItLetter = function() {
     this.intervalId = 0;
     this.background = '#000';
 
+    this.score = 0;
     this.letters = [];
 };
 
@@ -73,12 +74,17 @@ PumpItLetter.prototype.run = function () {
 
 PumpItLetter.prototype.parseKeys = function(keyPressed) {
     var self = this;
-
     for (var item in self.letters) {
         var letter = self.letters[item];
-
         if (keyPressed === letter.getKeyCode()) {
-            letter.color = 'red';
+            self.score += 1;
+            letter.color = 'red';//dissapear effect
+            var temp;
+            temp = setInterval(function () {
+                self.letters.splice(item, 1);
+                clearInterval(temp);
+            }, 100);
+            return;
         }
     }
 };
@@ -93,6 +99,7 @@ PumpItLetter.prototype.draw = function () {
     var self = this;
 
     self.drawLetters(ctx);
+    self.drawLetter(new Letter('Score: ' + self.score.toString(), 10, 50, 'yellow'), ctx);
     self.drawLine(ctx);
 };
 
@@ -127,7 +134,7 @@ PumpItLetter.prototype.drawLetters = function (ctx) {
 
 PumpItLetter.prototype.drawLetter = function (Letter, ctx) {
     ctx.fillStyle = Letter.color;
-    ctx.font = "bold 56px Arial";
+    ctx.font = "bold 46px Arial";
     ctx.fillText(Letter.value, Letter.x, Letter.y);
 };
 
@@ -144,15 +151,15 @@ PumpItLetter.prototype.drawLine = function (ctx) {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-var Letter = function(value, x, y) {
+var Letter = function(value, x, y, color) {
     this.value = value || '';
-    this.color = 'white';
+    this.color = color || 'white';
     this.size = '';
     this.x = x || 0;
     this.y = y || 0;
 };
 
-Letter.prototype.getKeyCode = function(value) {
+Letter.prototype.getKeyCode = function() {
     return this.value.charCodeAt();
 };
 
@@ -160,9 +167,9 @@ Letter.prototype.buildFromKeyCode = function(value) {
     return new Letter(String.fromCharCode(value));
 };
 
-Letter.prototype.buildRandom = function(x, y) {
+Letter.prototype.buildRandom = function(x, y, color) {
     var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var randomPoz = Math.floor(Math.random() * charSet.length);
     var word = charSet.substring(randomPoz,randomPoz + 1);
-    return new Letter(word, x, y);
+    return new Letter(word, x, y, color);
 };
