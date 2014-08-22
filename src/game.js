@@ -15,8 +15,8 @@ var PumpItLetter = function() {
     this.maxVelocity = 150;
     this.intervalId = 0;
     this.background = '#000';
-
     this.score = 0;
+    this.losed = 0;
     this.letters = [];
     this.collisionBar;
 };
@@ -72,7 +72,7 @@ PumpItLetter.prototype.run = function () {
 
     setInterval(function () {
         self.workLetters();
-    }, 1000);
+    }, 2000);
 };
 
 PumpItLetter.prototype.parseKeys = function(keyPressed) {
@@ -105,21 +105,25 @@ PumpItLetter.prototype.onLetterAssertion = function(itemKey) {
 PumpItLetter.prototype.draw = function () {
     var self = this;
     var ctx = this.canvas.getContext("2d");
+    var scoreSprite = new Letter('Score: ' + self.score.toString(), 10, 30, 'yellow');
+    var losedSprite = new Letter('Losed: ' + self.losed.toString(), 150, 30, 'red');
+    scoreSprite.size = losedSprite.size = 25;
 
     ctx.fillStyle = this.background;
     ctx.fillRect(0, 0, this.width, this.height);
 
     self.drawLine(self.collisionBar, ctx);
     self.drawLetters(ctx);
-    self.drawLetter(new Letter('Score: ' + self.score.toString(), 10, 50, 'yellow'), ctx);
+    self.drawLetter(scoreSprite, ctx);
+    self.drawLetter(losedSprite, ctx);
 };
 
 PumpItLetter.prototype.workLetters = function (ctx) {
     var self = this;
-    if (self.letters.length < 20) {
+    if (self.letters.length < 5) {
         self.letters.push(
             Letter.prototype.buildRandom(
-                Math.fromto(20, self.canvas.width) - 50, 0
+                Math.fromto(50, self.canvas.width) - 50, 0
             )
         );
     }
@@ -133,6 +137,9 @@ PumpItLetter.prototype.drawLetters = function (ctx) {
         if (letter.y > self.canvas.height) {
             //new Audio('sad.wav').play();
             letter.y = 0;
+            letter.x = Math.fromto(50, self.canvas.width) - 50;
+            letter.value = letter.getRandomLetter();
+            self.losed += 1;
         }
         self.drawLetter(letter, ctx);
     }
@@ -140,22 +147,21 @@ PumpItLetter.prototype.drawLetters = function (ctx) {
 
 PumpItLetter.prototype.drawLetter = function (Letter, ctx) {
     ctx.fillStyle = Letter.color;
-    ctx.font = "bold 46px Arial";
+    ctx.font = Letter.getStyleForCanvas();
     ctx.fillText(Letter.value, Letter.x, Letter.y);
 };
 
 PumpItLetter.prototype.drawLine = function (CollisionBar, ctx) {
-    var self = this;
     ctx.lineWidth = CollisionBar.height || 50;
     ctx.strokeStyle = CollisionBar.color;
     ctx.beginPath();
     ctx.moveTo(0, CollisionBar.y);
-    ctx.lineTo(self.canvas.width, CollisionBar.y);
+    ctx.lineTo(this.canvas.width, CollisionBar.y);
     ctx.stroke();
 };
 
 var CollisionBar = function(y, height, color) {
-    this.color = color || 'white';
+    this.color = color || '#fff';
     this.height = height || 50;
     this.y = y || 0;
 };
@@ -168,8 +174,11 @@ CollisionBar.prototype.checkCollision = function(Letter, threshold) {
 
 var Letter = function(value, x, y, color) {
     this.value = value || '';
-    this.color = color || 'white';
-    this.size = '';
+    this.color = color || '#fff';
+    this.size = 45;
+    this.bold = true;
+    this.italic = false;
+    this.family = 'Architects Daughter';
     this.x = x || 0;
     this.y = y || 0;
 };
@@ -178,13 +187,24 @@ Letter.prototype.getKeyCode = function() {
     return this.value.charCodeAt();
 };
 
+Letter.prototype.getStyleForCanvas = function() {
+    var fontString = '';
+    fontString += this.bold ? 'bold ' : ' ';
+    fontString += this.size ? this.size + 'px ' : '45px ';
+    fontString += this.family ? this.family : 'Arial';
+    return fontString;
+};
+
 Letter.prototype.buildFromKeyCode = function(value) {
     return new Letter(String.fromCharCode(value));
 };
-
-Letter.prototype.buildRandom = function(x, y, color) {
+Letter.prototype.getRandomLetter = function() {
     var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var randomPoz = Math.floor(Math.random() * charSet.length);
-    var word = charSet.substring(randomPoz,randomPoz + 1);
-    return new Letter(word, x, y, color);
+    var letter = charSet.substring(randomPoz,randomPoz + 1);
+    return letter;
+};
+
+Letter.prototype.buildRandom = function(x, y, color) {
+    return new Letter(this.getRandomLetter(), x, y, color);
 };
