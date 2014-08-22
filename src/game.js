@@ -13,8 +13,10 @@ var PumpItLetter = function() {
     this.height = 0;
     this.minVelocity = 60;
     this.maxVelocity = 150;
+    this.maxLetters = 10;
     this.intervalId = 0;
     this.background = '#000';
+
     this.score = 0;
     this.losed = 0;
     this.letters = [];
@@ -94,10 +96,9 @@ PumpItLetter.prototype.onLetterAssertion = function(itemKey) {
 
     new Audio('happy.wav').play();
     self.score += 1;
-    letter.color = 'red';//dissapear effect
-
+    letter.color = 'red'; //dissapear effect
     temp = setInterval(function () {
-        self.letters.splice(itemKey, 1);
+        letter.visible = false;
         clearInterval(temp);
     }, 60);
 };
@@ -120,7 +121,7 @@ PumpItLetter.prototype.draw = function () {
 
 PumpItLetter.prototype.workLetters = function (ctx) {
     var self = this;
-    if (self.letters.length < 5) {
+    if (self.letters.length < self.maxLetters) {
         self.letters.push(
             Letter.prototype.buildRandom(
                 Math.fromto(50, self.canvas.width) - 50, 0
@@ -131,17 +132,16 @@ PumpItLetter.prototype.workLetters = function (ctx) {
 
 PumpItLetter.prototype.drawLetters = function (ctx) {
     var self = this;
+
     for (var item in self.letters) {
         var letter = self.letters[item];
-        letter.y += 3;
-        if (letter.y > self.canvas.height) {
-            //new Audio('sad.wav').play();
-            letter.y = 0;
-            letter.x = Math.fromto(50, self.canvas.width) - 50;
-            letter.value = letter.getRandomLetter();
+        var threshold = letter.size;
+        letter.y += 2;
+        if (letter.y > self.canvas.height + threshold / 2) {;
+            letter.regenerate(Math.fromto(threshold, self.canvas.width) - threshold);
             self.losed += 1;
         }
-        self.drawLetter(letter, ctx);
+        letter.visible ? self.drawLetter(letter, ctx) : void(0);
     }
 };
 
@@ -179,8 +179,18 @@ var Letter = function(value, x, y, color) {
     this.bold = true;
     this.italic = false;
     this.family = 'Architects Daughter';
+    this.visible = true;
     this.x = x || 0;
     this.y = y || 0;
+};
+
+Letter.prototype.regenerate = function(x) {
+    this.y = 0;
+    this.x = x;
+    this.value = this.getRandomLetter();
+    this.color = '#fff';
+    this.visible = true;
+    return this;
 };
 
 Letter.prototype.getKeyCode = function() {
