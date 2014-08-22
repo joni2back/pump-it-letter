@@ -18,6 +18,7 @@ var PumpItLetter = function() {
 
     this.score = 0;
     this.letters = [];
+    this.collisionBar;
 };
 
 PumpItLetter.prototype.init = function (div) {
@@ -26,12 +27,14 @@ PumpItLetter.prototype.init = function (div) {
     self.containerDiv = div;
     self.width = window.innerWidth;
     self.height = window.innerHeight;
+    self.collisionBar = new CollisionBar(self.height * 75 / 100);
 
     window.onresize = function (event) {
         self.width = window.innerWidth;
         self.height = window.innerHeight;
         self.canvas.width = self.width;
         self.canvas.height = self.height;
+        self.collisionBar.y = self.height * 75 / 100;
         self.draw();
     };
 
@@ -74,44 +77,49 @@ PumpItLetter.prototype.run = function () {
 
 PumpItLetter.prototype.parseKeys = function(keyPressed) {
     var self = this;
-    for (var item in self.letters) {
-        var letter = self.letters[item];
+    for (var itemKey in self.letters) {
+        var letter = self.letters[itemKey];
         if (keyPressed === letter.getKeyCode()) {
-            self.score += 1;
-            letter.color = 'red';//dissapear effect
-            var temp;
-            temp = setInterval(function () {
-                self.letters.splice(item, 1);
-                clearInterval(temp);
-            }, 100);
-            return;
+            if (self.collisionBar.checkCollision(letter)) { //collision
+                return self.onLetterAssertion(itemKey);
+            }
         }
     }
 };
 
+PumpItLetter.prototype.onLetterAssertion = function(itemKey) {
+    var self = this;
+    var letter = self.letters[itemKey];
+    var temp;
+
+    new Audio('happy.wav').play();
+    self.score += 1;
+    letter.color = 'red';//dissapear effect
+
+    temp = setInterval(function () {
+        self.letters.splice(itemKey, 1);
+        clearInterval(temp);
+    }, 60);
+};
+
 PumpItLetter.prototype.draw = function () {
+    var self = this;
     var ctx = this.canvas.getContext("2d");
 
-    //Draw the background.
     ctx.fillStyle = this.background;
     ctx.fillRect(0, 0, this.width, this.height);
 
-    var self = this;
-
+    self.drawLine(self.collisionBar, ctx);
     self.drawLetters(ctx);
     self.drawLetter(new Letter('Score: ' + self.score.toString(), 10, 50, 'yellow'), ctx);
-    self.drawLine(ctx);
 };
-
-////////////////////////////////////////////////////////////////////////////////
 
 PumpItLetter.prototype.workLetters = function (ctx) {
     var self = this;
     if (self.letters.length < 20) {
         self.letters.push(
             Letter.prototype.buildRandom(
-                Math.fromto(0, self.canvas.width) - 50,
-                0
+                Math.fromto(20, self.canvas.width) - 50, 0
             )
         );
     }
@@ -119,15 +127,13 @@ PumpItLetter.prototype.workLetters = function (ctx) {
 
 PumpItLetter.prototype.drawLetters = function (ctx) {
     var self = this;
-
     for (var item in self.letters) {
         var letter = self.letters[item];
-        letter.y += 5;
-
+        letter.y += 3;
         if (letter.y > self.canvas.height) {
+            //new Audio('sad.wav').play();
             letter.y = 0;
         }
-
         self.drawLetter(letter, ctx);
     }
 };
@@ -138,18 +144,27 @@ PumpItLetter.prototype.drawLetter = function (Letter, ctx) {
     ctx.fillText(Letter.value, Letter.x, Letter.y);
 };
 
-PumpItLetter.prototype.drawLine = function (ctx) {
+PumpItLetter.prototype.drawLine = function (CollisionBar, ctx) {
     var self = this;
-    ctx.lineWidth = 5;
-    ctx.strokeStyle = '#8ED6FF';
+    ctx.lineWidth = CollisionBar.height || 50;
+    ctx.strokeStyle = CollisionBar.color;
     ctx.beginPath();
-    ctx.moveTo(0, self.canvas.height * 75 / 100);
-    ctx.lineTo(self.canvas.width, self.canvas.height * 75 / 100);
+    ctx.moveTo(0, CollisionBar.y);
+    ctx.lineTo(self.canvas.width, CollisionBar.y);
     ctx.stroke();
 };
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+var CollisionBar = function(y, height, color) {
+    this.color = color || 'white';
+    this.height = height || 50;
+    this.y = y || 0;
+};
+
+CollisionBar.prototype.checkCollision = function(Letter, threshold) {
+    threshold = threshold || 10;
+    return Letter.y + threshold >= this.y &&
+           Letter.y - threshold <= this.height + this.y;
+};
 
 var Letter = function(value, x, y, color) {
     this.value = value || '';
