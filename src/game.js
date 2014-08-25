@@ -11,8 +11,8 @@ var PumpItLetter = function() {
     this.canvas = null;
     this.width = 0;
     this.height = 0;
-    this.minVelocity = 60;
-    this.maxVelocity = 150;
+    this.minVelocity = 2;
+    this.maxVelocity = 5;
     this.maxLetters = 10;
     this.intervalId = 0;
     this.background = '#000';
@@ -94,11 +94,19 @@ PumpItLetter.prototype.onLetterAssertion = function(itemKey) {
     var letter = self.letters[itemKey];
     var temp;
 
+    if (letter.pushed) {
+        return;
+    }
+
     new Audio('happy.wav').play();
+
     self.score += 1;
-    letter.color = 'red'; //dissapear effect
+    self.collisionBar.color = '#FFF';
+    letter.color = '#D6402A';
+    letter.pushed = true;
     temp = setInterval(function () {
         letter.visible = false;
+        self.collisionBar.color = '#FFBD00';
         clearInterval(temp);
     }, 60);
 };
@@ -106,8 +114,8 @@ PumpItLetter.prototype.onLetterAssertion = function(itemKey) {
 PumpItLetter.prototype.draw = function () {
     var self = this;
     var ctx = this.canvas.getContext("2d");
-    var scoreSprite = new Letter('Score: ' + self.score.toString(), 10, 30, 'yellow');
-    var losedSprite = new Letter('Losed: ' + self.losed.toString(), 150, 30, 'red');
+    var scoreSprite = new Letter('Score: ' + self.score.toString(), 10, 30, '#FFBD00');
+    var losedSprite = new Letter('Losed: ' + self.losed.toString(), 150, 30, '#D6402A');
     scoreSprite.size = losedSprite.size = 25;
 
     ctx.fillStyle = this.background;
@@ -124,7 +132,8 @@ PumpItLetter.prototype.workLetters = function (ctx) {
     if (self.letters.length < self.maxLetters) {
         self.letters.push(
             Letter.prototype.buildRandom(
-                Math.fromto(50, self.canvas.width) - 50, 0
+                Math.fromto(50, self.canvas.width) - 50, 0, null,
+                Math.fromto(self.minVelocity, self.maxVelocity)
             )
         );
     }
@@ -136,10 +145,13 @@ PumpItLetter.prototype.drawLetters = function (ctx) {
     for (var item in self.letters) {
         var letter = self.letters[item];
         var threshold = letter.size;
-        letter.y += 2;
+        letter.y += letter.speed;
+
         if (letter.y > self.canvas.height + threshold / 2) {;
+            if (! letter.pushed) {
+                self.losed += 1;
+            }
             letter.regenerate(Math.fromto(threshold, self.canvas.width) - threshold);
-            self.losed += 1;
         }
         letter.visible ? self.drawLetter(letter, ctx) : void(0);
     }
@@ -161,7 +173,7 @@ PumpItLetter.prototype.drawLine = function (CollisionBar, ctx) {
 };
 
 var CollisionBar = function(y, height, color) {
-    this.color = color || '#fff';
+    this.color = color || '#FFBD00';
     this.height = height || 50;
     this.y = y || 0;
 };
@@ -172,24 +184,27 @@ CollisionBar.prototype.checkCollision = function(Letter, threshold) {
            Letter.y - threshold <= this.height + this.y;
 };
 
-var Letter = function(value, x, y, color) {
+var Letter = function(value, x, y, color, speed) {
     this.value = value || '';
-    this.color = color || '#fff';
-    this.size = 45;
+    this.speed = speed || 1;
+    this.color = color || '#FFF';
+    this.size = 75;
     this.bold = true;
     this.italic = false;
     this.family = 'Architects Daughter';
     this.visible = true;
     this.x = x || 0;
     this.y = y || 0;
+    this.pushed = false;
 };
 
 Letter.prototype.regenerate = function(x) {
     this.y = 0;
     this.x = x;
     this.value = this.getRandomLetter();
-    this.color = '#fff';
+    this.color = '#FFF';
     this.visible = true;
+    this.pushed = false;
     return this;
 };
 
@@ -208,6 +223,7 @@ Letter.prototype.getStyleForCanvas = function() {
 Letter.prototype.buildFromKeyCode = function(value) {
     return new Letter(String.fromCharCode(value));
 };
+
 Letter.prototype.getRandomLetter = function() {
     var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var randomPoz = Math.floor(Math.random() * charSet.length);
@@ -215,6 +231,6 @@ Letter.prototype.getRandomLetter = function() {
     return letter;
 };
 
-Letter.prototype.buildRandom = function(x, y, color) {
-    return new Letter(this.getRandomLetter(), x, y, color);
+Letter.prototype.buildRandom = function(x, y, color, speed) {
+    return new Letter(this.getRandomLetter(), x, y, color, speed);
 };
