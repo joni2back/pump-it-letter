@@ -3,7 +3,7 @@
  */
 
 (function() {
-    Math.fromto = function (from, to) {
+    Math.fromto = function(from, to) {
         return Math.floor(Math.random() * (to - from + 1)) + from;
     };
 
@@ -13,8 +13,8 @@
         this.width = 0;
         this.height = 0;
         this.minVelocity = 2;
-        this.maxVelocity = 5;
-        this.maxLetters = 10;
+        this.maxVelocity = 4;
+        this.maxLetters = 5;
         this.intervalId = 0;
         this.background = this.colors.mainBg;
 
@@ -26,23 +26,23 @@
     };
 
     PumpItLetter.prototype.colors = {
-        collisionBarBg: "#FFBD00",
-        collisionBarHoverBg: "#FFFFFF",
-        mainBg: "#222222",
-        scoreLosed: "#D6402A",
-        scoreGain: "#FFBD00",
+        collisionBarBg: "#FFEB3B",
+        collisionBarHoverBg: "#FFA000",
+        mainBg: "#2196F3",
+        scoreLosed: "#E0F7FA",
+        scoreGain: "#E0F7FA",
         letter: "#FFFFFF",
-        letterHover: "#D6402A"
+        letterHover: "#FF3D00"
     };
 
-    PumpItLetter.prototype.init = function (element) {
+    PumpItLetter.prototype.init = function(element) {
         var self = this;
 
         self.width = window.innerWidth;
         self.height = window.innerHeight;
         self.collisionBar = new CollisionBar(self.height * 75 / 100);
 
-        window.onresize = function (event) {
+        window.onresize = function(event) {
             self.width = window.innerWidth;
             self.height = window.innerHeight;
             self.canvas.width = self.width;
@@ -61,30 +61,30 @@
             e.preventDefault();
         }, false);
 
-        window.document.addEventListener("keydown", function (e) {
+        window.document.addEventListener("keydown", function(e) {
             var key = e.which || e.keyCode;
             self.parseKeys(key);
         }, true);
     };
 
-    PumpItLetter.prototype.start = function () {
+    PumpItLetter.prototype.start = function() {
         var xCenter = this.canvas.width / 2;
         var yCenter = this.canvas.height / 2;
         this.run();
     };
 
-    PumpItLetter.prototype.pause = function () {
+    PumpItLetter.prototype.pause = function() {
         window.clearInterval(this.intervalId);
     };
 
-    PumpItLetter.prototype.run = function () {
+    PumpItLetter.prototype.run = function() {
         var self = this;
-        self.intervalId = window.setInterval(function () {
-            self.draw();
+        self.intervalId = window.setInterval(function() {
+            window.requestAnimationFrame(self.draw.bind(self));
         }, 1000 / self.fps);
 
-        window.setInterval(function () {
-            self.workLetters();
+        window.setInterval(function() {
+            window.requestAnimationFrame(self.workLetters.bind(self));
         }, 2000);
     };
 
@@ -115,14 +115,14 @@
         self.collisionBar.color = self.colors.collisionBarHoverBg;
         letter.color = self.colors.letterHover;
         letter.pushed = true;
-        temp = window.setInterval(function () {
+        temp = window.setInterval(function() {
             letter.visible = false;
             self.collisionBar.color = self.colors.collisionBarBg;
             typeof temp !== 'undefined' && window.clearInterval(temp);
         }, 60);
     };
 
-    PumpItLetter.prototype.draw = function () {
+    PumpItLetter.prototype.draw = function() {
         var self = this;
         var ctx = self.canvas.getContext("2d");
         var scoreSprite = new Letter('Score: ' + self.score.toString(), 10, 30, self.colors.scoreGain);
@@ -138,7 +138,7 @@
         self.drawLetter(losedSprite, ctx);
     };
 
-    PumpItLetter.prototype.workLetters = function (ctx) {
+    PumpItLetter.prototype.workLetters = function(ctx) {
         var self = this;
         if (self.letters.length < self.maxLetters) {
             self.letters.push(
@@ -150,7 +150,7 @@
         }
     };
 
-    PumpItLetter.prototype.drawLetters = function (ctx) {
+    PumpItLetter.prototype.drawLetters = function(ctx) {
         var self = this;
 
         for (var item in self.letters) {
@@ -168,13 +168,13 @@
         }
     };
 
-    PumpItLetter.prototype.drawLetter = function (Letter, ctx) {
+    PumpItLetter.prototype.drawLetter = function(Letter, ctx) {
         ctx.fillStyle = Letter.color;
         ctx.font = Letter.getStyleForCanvas();
         ctx.fillText(Letter.value, Letter.x, Letter.y);
     };
 
-    PumpItLetter.prototype.drawLine = function (CollisionBar, ctx) {
+    PumpItLetter.prototype.drawLine = function(CollisionBar, ctx) {
         ctx.lineWidth = CollisionBar.height || 50;
         ctx.strokeStyle = CollisionBar.color;
         ctx.beginPath();
@@ -231,10 +231,6 @@
         return fontString;
     };
 
-    Letter.prototype.buildFromKeyCode = function(value) {
-        return new Letter(String.fromCharCode(value));
-    };
-
     Letter.prototype.getRandomLetter = function() {
         var charSet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
         var randomPoz = Math.floor(Math.random() * charSet.length);
@@ -247,4 +243,5 @@
     };
 
     window.PumpItLetter = PumpItLetter;
+    
 })(window, Math);
